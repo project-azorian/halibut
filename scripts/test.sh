@@ -1,6 +1,31 @@
 #!/bin/bash
 set -ex
 
+cat <<EOF | kubectl create -f -
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: macvlan-conf
+spec:
+  config: '{
+      "cniVersion": "0.3.0",
+      "type": "macvlan",
+      "master": "eth1",
+      "mode": "bridge",
+      "ipam": {
+        "type": "host-local",
+        "subnet": "192.168.60.0/24",
+        "rangeStart": "192.168.60.100",
+        "rangeEnd": "192.168.60.116",
+        "routes": [
+          { "dst": "0.0.0.0/0" }
+        ],
+        "gateway": "192.168.60.1"
+      }
+    }'
+EOF
+kubectl describe network-attachment-definitions macvlan-conf
+
 cat <<EOF | kubectl apply -f -
 apiVersion: apps/v1
 kind: DaemonSet
@@ -14,6 +39,8 @@ spec:
       name: test-runc
   template:
     metadata:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: macvlan-conf
       labels:
         name: test-runc
         test: runtime-class
@@ -51,6 +78,8 @@ spec:
       name: test-kata
   template:
     metadata:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: macvlan-conf
       labels:
         name: test-kata
         test: runtime-class
@@ -88,6 +117,8 @@ spec:
       name: test-gvisor
   template:
     metadata:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: macvlan-conf
       labels:
         name: test-gvisor
         test: runtime-class

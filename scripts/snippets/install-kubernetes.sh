@@ -6,7 +6,7 @@ apt-get -y install socat conntrack ipset ipvsadm
 
 mkdir -p /usr/local/bin
 for COMPONENT in kubectl kubelet kubeadm; do
-  curl -sSL -o /usr/local/bin/${COMPONENT} https://storage.googleapis.com/kubernetes-release/release/v1.13.0/bin/linux/amd64/${COMPONENT}
+  curl -sSL -o /usr/local/bin/${COMPONENT} https://storage.googleapis.com/kubernetes-release/release/v1.13.1/bin/linux/amd64/${COMPONENT}
   chmod +x /usr/local/bin/${COMPONENT}
 done
 

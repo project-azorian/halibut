@@ -5,7 +5,8 @@ mkdir -p \
   /etc/cni/net.d \
   /opt/cni/bin
 
-curl -sSL https://github.com/containernetworking/plugins/releases/download/v0.6.0/cni-plugins-amd64-v0.6.0.tgz | tar -xvz -C /opt/cni/bin/
+VERSION="v0.7.4"
+curl -sSL https://github.com/containernetworking/plugins/releases/download/${VERSION}/cni-plugins-amd64-${VERSION}.tgz | tar -xvz -C /opt/cni/bin/
 
 modprobe br_netfilter
 tee /etc/sysctl.d/k8s.conf <<EOF

@@ -23,7 +23,7 @@ tee /etc/kubernetes/kubeadm/create.yaml <<EOF
 apiVersion: kubeadm.k8s.io/v1alpha3
 kind: ClusterConfiguration
 clusterName: kubernetes
-kubernetesVersion: v1.13.0
+kubernetesVersion: v1.13.1
 imageRepository: k8s.gcr.io
 networking:
   dnsDomain: cluster.local
@@ -75,15 +75,11 @@ mkdir -p "$HOME/.kube"
 cp -i /etc/kubernetes/admin.conf "$HOME/.kube/config"
 chown "$(id -u):$(id -g)" "$HOME/.kube/config"
 
-kubectl apply -f https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml
-curl -sSL https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml | \
-  sed 's|192.168.0.0/16|172.18.0.0/16|g' | \
-  sed '/            # Auto-detect the BGP IP address.$/a \ \ \ \ \ \ \ \ \ \ \ \ - name: IP_AUTODETECTION_METHOD\n\ \ \ \ \ \ \ \ \ \ \ \ \ \ value: "can-reach=8.8.8.8"' | \
-  kubectl apply -f -
 kubectl taint nodes --all node-role.kubernetes.io/master-
 
-kubectl create -f https://raw.githubusercontent.com/kubernetes/kubernetes/master/cluster/addons/runtimeclass/runtimeclass_crd.yaml
+bash ./snippets/deploy-cni-multus.sh
 
+kubectl create -f https://raw.githubusercontent.com/kubernetes/kubernetes/master/cluster/addons/runtimeclass/runtimeclass_crd.yaml
 cat <<EOF | kubectl apply -f -
 kind: RuntimeClass
 apiVersion: node.k8s.io/v1alpha1

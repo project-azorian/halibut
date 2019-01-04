@@ -159,22 +159,19 @@ spec:
               fieldRef:
                 fieldPath: metadata.namespace
         ports:
-        - containerPort: 80
-          hostPort: 80
-        - containerPort: 443
-          hostPort: 443
-        # (Optional) we expose 18080 to access nginx stats in url /nginx-status
-        - containerPort: 18080
-          hostPort: 18080
+          - containerPort: 80
+          - containerPort: 443
+          # (Optional) we expose 18080 to access nginx stats in url /nginx-status
+          - containerPort: 18080
         args:
-        - /nginx-ingress-controller
-        - --default-backend-service=\$(POD_NAMESPACE)/default-http-backend
-        - --configmap=\$(POD_NAMESPACE)/nginx-load-balancer-conf
-        - --tcp-services-configmap=\$(POD_NAMESPACE)/tcp-services
-        - --udp-services-configmap=\$(POD_NAMESPACE)/udp-services
-        - --annotations-prefix=nginx.ingress.kubernetes.io
-        # use minikube IP address in ingress status field
-        - --report-node-internal-ip-address
+          - /nginx-ingress-controller
+          - --default-backend-service=\$(POD_NAMESPACE)/default-http-backend
+          - --configmap=\$(POD_NAMESPACE)/nginx-load-balancer-conf
+          - --tcp-services-configmap=\$(POD_NAMESPACE)/tcp-services
+          - --udp-services-configmap=\$(POD_NAMESPACE)/udp-services
+          - --annotations-prefix=nginx.ingress.kubernetes.io
+          # use minikube IP address in ingress status field
+          - --report-node-internal-ip-address
         securityContext:
           capabilities:
               drop:
@@ -365,4 +362,27 @@ spec:
     targetPort: 8080
   selector:
     app.kubernetes.io/name: default-http-backend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-ingress-controller
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: nginx-ingress-controller
+    app.kubernetes.io/part-of: kube-system
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+    - name: https
+      port: 443
+      targetPort: 443
+    - name: metrics
+      port: 18080
+      targetPort: 18080
+  selector:
+    app.kubernetes.io/name: nginx-ingress-controller
 EOF

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -ex
 
-bash ./snippets/install-docker.sh
+#bash ./snippets/install-docker.sh
 
 
 bash ./snippets/install-crictl.sh
