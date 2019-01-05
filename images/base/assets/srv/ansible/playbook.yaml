@@ -1,0 +1,10 @@
+- hosts: node
+  name: halibut
+  gather_facts: False
+  become: false
+  tasks:
+    - ping:
+      name: node_ping
+    - delegate_to: localhost
+      name: container_ping
+      ping:

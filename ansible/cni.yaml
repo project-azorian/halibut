@@ -1,0 +1,51 @@
+
+
+- hosts: node
+  name: cni
+  gather_facts: False
+  become: false
+  tasks:
+
+    - name: Creates required directories
+      file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - /etc/cni/net.d
+        - /opt/cni/bin
+
+    - name: Binaries
+      unarchive:
+        src:  https://github.com/containernetworking/plugins/releases/download/v0.7.4/cni-plugins-amd64-v0.7.4.tgz
+        dest: /opt/cni/bin
+        remote_src: yes
+
+    - name: ensure netfilter module loaded
+      modprobe:
+        name: br_netfilter
+        state: present
+
+    - name: Ensure IP forwarding enabled
+      sysctl:
+        name: net.ipv4.ip_forward
+        value: 1
+        sysctl_set: yes
+        state: present
+        reload: yes
+
+    - name: remove any existing cni config
+      file:
+        state: "{{ item }}"
+        path: "/etc/cni/net.d/"
+      with_items:
+        - absent
+        - directory
+
+    - name: Configuration
+      copy:
+        dest: "/etc/cni/net.d/99-loopback.conf"
+        content: |
+          {
+            "cniVersion": "0.3.1",
+            "type": "loopback"
+          }

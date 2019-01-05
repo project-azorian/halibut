@@ -1,0 +1,18 @@
+
+- hosts: node
+  name: crictl
+  gather_facts: False
+  become: false
+  tasks:
+
+    - name: Binary
+      unarchive:
+        src: https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.13.0/crictl-v1.13.0-linux-amd64.tar.gz
+        dest: /usr/local/bin
+        remote_src: yes
+
+    - name: Configuration
+      copy:
+        dest: "/etc/crictl.yaml"
+        content: |
+          runtime-endpoint: unix:///var/run/crio/crio.sock

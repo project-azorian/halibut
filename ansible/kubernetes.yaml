@@ -1,0 +1,75 @@
+
+- hosts: node
+  name: kubernetes
+  gather_facts: False
+  become: false
+  tasks:
+    - name: kubernetes support packages
+      apt:
+        name: socat,conntrack,ipset,ipvsadm
+
+    - name: download kubernetes binarys
+      get_url:
+        url: https://storage.googleapis.com/kubernetes-release/release/v1.13.1/bin/linux/amd64/{{ item }}
+        dest: "/usr/local/bin/{{ item }}"
+        mode: u=rwx,g=rx,o=rx
+        owner: root
+        force: yes
+      with_items:
+        - kubectl
+        - kubelet
+        - kubeadm
+
+    - name: Creates required directories
+      file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - /var/lib/kubelet
+        - /var/lib/kubernetes
+        - /var/run/kubernetes
+
+    - name: Configuration
+      copy:
+        dest: "/etc/default/kubelet"
+        content: |
+          KUBELET_EXTRA_ARGS=--feature-gates=RuntimeClass=true --cgroup-driver=cgroupfs --container-runtime=remote --container-runtime-endpoint=unix:///var/run/crio/crio.sock --image-pull-progress-deadline=15m --network-plugin=cni
+
+    - name: Configuration
+      copy:
+        dest: "/etc/systemd/system/kubelet.service"
+        content: |
+          [Unit]
+          Description=kubelet: The Kubernetes Node Agent
+          Documentation=https://kubernetes.io/docs/home/
+
+          [Service]
+          Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf"
+          Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml"
+          # This is a file that "kubeadm init" and "kubeadm join" generates at runtime, populating the KUBELET_KUBEADM_ARGS variable dynamically
+          EnvironmentFile=-/var/lib/kubelet/kubeadm-flags.env
+          # This is a file that the user can use for overrides of the kubelet args as a last resort. Preferably, the user should use
+          # the .NodeRegistration.KubeletExtraArgs object in the configuration files instead. KUBELET_EXTRA_ARGS should be sourced from this file.
+          EnvironmentFile=-/etc/default/kubelet
+          ExecStartPre=-/sbin/swapoff --all
+          ExecStartPre=-/sbin/modprobe \
+                          ip_vs \
+                          ip_vs_rr \
+                          ip_vs_wrr \
+                          ip_vs_sh \
+                          nf_conntrack_ipv4
+          ExecStart=/usr/local/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS
+          Restart=always
+          StartLimitInterval=0
+          RestartSec=10
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: enable kubelet service and restart it to ensure configs picked up
+      systemd:
+        name: kubelet
+        state: restarted
+        enabled: yes
+        daemon_reload: yes
+        masked: no
